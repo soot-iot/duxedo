@@ -206,7 +206,7 @@ defmodule Duxedo.Store do
   defp retention_seconds({n, :second}), do: n
   defp retention_seconds({n, :minute}), do: n * 60
   defp retention_seconds({n, :hour}), do: n * 3600
-  defp retention_seconds({n, :day}), do: n * 86400
+  defp retention_seconds({n, :day}), do: n * 86_400
   defp retention_seconds(nil), do: 3600
 
   defp schedule_flush(interval), do: Process.send_after(self(), :flush_to_disk, interval)

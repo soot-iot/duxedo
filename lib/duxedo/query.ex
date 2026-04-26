@@ -280,7 +280,7 @@ defmodule Duxedo.Query do
   defp last_to_seconds({n, :second}), do: n
   defp last_to_seconds({n, :minute}), do: n * 60
   defp last_to_seconds({n, :hour}), do: n * 3600
-  defp last_to_seconds({n, :day}), do: n * 86400
+  defp last_to_seconds({n, :day}), do: n * 86_400
 
   defp build_tags_filter(nil), do: ""
   defp build_tags_filter(tags) when map_size(tags) == 0, do: ""
@@ -303,18 +303,18 @@ defmodule Duxedo.Query do
         {materialized.field.name, Adbc.Column.to_list(materialized)}
       end)
 
-    case columns do
-      [] ->
-        []
-
-      [{_, first_values} | _] ->
-        for i <- 0..(length(first_values) - 1) do
-          Map.new(columns, fn {name, values} -> {name, Enum.at(values, i)} end)
-        end
-    end
+    rows_for_columns(columns)
   end
 
   defp result_to_rows(%Adbc.Result{data: []}), do: []
+
+  defp rows_for_columns([]), do: []
+
+  defp rows_for_columns([{_, first_values} | _] = columns) do
+    for i <- 0..(length(first_values) - 1) do
+      Map.new(columns, fn {name, values} -> {name, Enum.at(values, i)} end)
+    end
+  end
 
   defp result_to_single_value(result, col_name) do
     case result_to_rows(result) do

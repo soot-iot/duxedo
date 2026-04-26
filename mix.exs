@@ -15,7 +15,8 @@ defmodule Duxedo.MixProject do
       description: description(),
       package: package(),
       source_url: @source_url,
-      docs: docs()
+      docs: docs(),
+      aliases: aliases()
     ]
   end
 
@@ -48,12 +49,25 @@ defmodule Duxedo.MixProject do
     ]
   end
 
+  defp aliases do
+    [
+      format: "format --migrate",
+      credo: "credo --strict"
+    ]
+  end
+
   defp deps do
     [
       {:dux, "~> 0.3"},
       {:adbc, "~> 0.11"},
       {:telemetry, "~> 0.4.3 or ~> 1.0"},
-      {:telemetry_metrics, "~> 0.6 or ~> 1.0"}
+      {:telemetry_metrics, "~> 0.6 or ~> 1.0"},
+
+      # Dev / test
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:ex_doc, "~> 0.34", only: [:dev], runtime: false},
+      {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
+      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false}
     ]
   end
 end

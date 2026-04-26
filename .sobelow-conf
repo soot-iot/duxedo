@@ -1,0 +1,20 @@
+[
+  verbose: false,
+  private: false,
+  skip: false,
+  router: "",
+  exit: "Low",
+  format: "txt",
+  out: "",
+  threshold: "low",
+  # DOS.StringToAtom flags `Duxedo.Collector.parse_event_name/1` —
+  # event names come from the user's child spec at start time and
+  # are not operator-controlled, so the atom-table-exhaustion risk
+  # does not apply.
+  ignore: ["Traversal.FileModule", "DOS.StringToAtom"],
+  ignore_files: [],
+  details: nil,
+  all_details: nil,
+  mark_skip_all: nil,
+  clear_skip: nil
+]

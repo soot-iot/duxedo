@@ -45,6 +45,9 @@ jobs:
 
       - run: mix deps.get
       - run: mix deps.unlock --check-unused
+      - run: mix deps.audit
       - run: mix format --check-formatted
       - run: mix compile --warnings-as-errors
+      - run: mix credo --strict
+      - run: mix sobelow
       - run: mix test
