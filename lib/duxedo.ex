@@ -44,7 +44,7 @@ defmodule Duxedo do
       if opts[:session] do
         opts
       else
-        Keyword.put(opts, :session, UUID.uuid4())
+        Keyword.put(opts, :session, generate_session_id())
       end
 
     children = [
@@ -57,10 +57,19 @@ defmodule Duxedo do
   end
 
   defdelegate list_metrics(opts \\ []), to: Duxedo.Query
+  defdelegate observations(metric_name, opts \\ []), to: Duxedo.Query
+  defdelegate events(event_name, opts \\ []), to: Duxedo.Query
   defdelegate last_value(metric_name, opts \\ []), to: Duxedo.Query
   defdelegate summary(metric_name, opts \\ []), to: Duxedo.Query
   defdelegate count(metric_name, opts \\ []), to: Duxedo.Query
+  defdelegate sum(metric_name, opts \\ []), to: Duxedo.Query
   defdelegate percentiles(metric_name, pcts \\ [50, 90, 95, 99], opts \\ []), to: Duxedo.Query
   defdelegate series(metric_name, opts \\ []), to: Duxedo.Query
+  defdelegate distribution(metric_name, opts \\ []), to: Duxedo.Query
+  defdelegate bucket(metric_name, bucket_seconds \\ 60, opts \\ []), to: Duxedo.Query
   defdelegate plot(metric_name, opts \\ []), to: Duxedo.Export
+
+  defp generate_session_id do
+    16 |> :crypto.strong_rand_bytes() |> Base.encode16(case: :lower)
+  end
 end

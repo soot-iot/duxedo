@@ -22,7 +22,7 @@ defmodule Duxedo.Collector do
   def init(args) do
     instance = args[:instance]
     collect_interval = (args[:collect_interval] || 5) * 1_000
-    session = args[:session] || UUID.uuid4()
+    session = args[:session] || (16 |> :crypto.strong_rand_bytes() |> Base.encode16(case: :lower))
     metrics = args[:metrics] || []
     events = args[:events] || []
 

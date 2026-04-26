@@ -50,11 +50,9 @@ defmodule Duxedo.MixProject do
   defp deps do
     [
       {:dux, "~> 0.3"},
-      {:adbc, "~> 0.7"},
+      {:adbc, "~> 0.11"},
       {:telemetry, "~> 0.4.3 or ~> 1.0"},
-      {:telemetry_metrics, "~> 0.6 or ~> 1.0"},
-      {:elixir_uuid, "> 1.2.0"},
-      {:term_ui, "~> 1.0.0-rc", optional: true}
+      {:telemetry_metrics, "~> 0.6 or ~> 1.0"}
     ]
   end
 end
