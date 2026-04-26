@@ -102,7 +102,7 @@ defmodule Duxedo.Collector do
           Adbc.Connection.bulk_insert!(conn, columns, table: "observations", mode: :append)
           %{state | obs_buffer: []}
         rescue
-          e ->
+          e in Adbc.Error ->
             Logger.warning("Duxedo: observation flush failed: #{Exception.message(e)}")
             state
         end
@@ -117,7 +117,7 @@ defmodule Duxedo.Collector do
         Adbc.Connection.bulk_insert!(conn, columns, table: "events", mode: :append)
         %{state | event_buffer: []}
       rescue
-        e ->
+        e in Adbc.Error ->
           Logger.warning("Duxedo: event flush failed: #{Exception.message(e)}")
           state
       end
@@ -193,6 +193,20 @@ defmodule Duxedo.Collector do
 
   # --- Telemetry handler callbacks ---
 
+  # The two telemetry callbacks rescue user-provided code (metric.tag_values,
+  # metric.measurement, metric.keep). A raise here would propagate up through
+  # :telemetry.execute/3 into whoever emitted the event, so the rescue stays —
+  # but it only catches typical user-code mistakes, not VM-level crashes.
+  @user_callback_errors [
+    ArgumentError,
+    KeyError,
+    FunctionClauseError,
+    ArithmeticError,
+    MatchError,
+    RuntimeError,
+    Protocol.UndefinedError
+  ]
+
   def handle_telemetry_metric(_event, measurements, metadata, config) do
     for metric <- config.metrics do
       try do
@@ -214,7 +228,7 @@ defmodule Duxedo.Collector do
           GenServer.cast(name(config.instance), {:observation, obs})
         end
       rescue
-        e ->
+        e in @user_callback_errors ->
           Logger.error("Duxedo: metric handler error: #{Exception.message(e)}")
       end
     end
@@ -236,7 +250,7 @@ defmodule Duxedo.Collector do
 
       GenServer.cast(name(config.instance), {:event, event})
     rescue
-      e ->
+      e in @user_callback_errors ->
         Logger.error("Duxedo: event handler error: #{Exception.message(e)}")
     end
 

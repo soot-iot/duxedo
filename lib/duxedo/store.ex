@@ -151,9 +151,14 @@ defmodule Duxedo.Store do
   def terminate(_reason, state) do
     do_flush(state)
   rescue
-    e -> Logger.error("Duxedo: failed to flush on shutdown: #{Exception.message(e)}")
+    e in Adbc.Error ->
+      Logger.error("Duxedo: failed to flush on shutdown: #{Exception.message(e)}")
   end
 
+  # Note: a partial failure here can double-count rows on the next
+  # flush — transfer_table may insert some rows on disk before raising,
+  # and the memory DELETE never runs. Observations has no unique key so
+  # duplicates accumulate. Acceptable for the happy path; document.
   defp do_flush(state) do
     cutoff = System.system_time(:second) - retention_seconds(state.retention[:memory])
 
@@ -165,7 +170,8 @@ defmodule Duxedo.Store do
     Adbc.Connection.query!(state.memory_conn, "DELETE FROM observations WHERE ts < #{cutoff}")
     Adbc.Connection.query!(state.memory_conn, "DELETE FROM events WHERE ts < #{cutoff}")
   rescue
-    e -> Logger.warning("Duxedo: flush to disk failed: #{Exception.message(e)}")
+    e in Adbc.Error ->
+      Logger.warning("Duxedo: flush to disk failed: #{Exception.message(e)}")
   end
 
   defp transfer_table(src_conn, dst_conn, table, cutoff) do
@@ -193,7 +199,8 @@ defmodule Duxedo.Store do
     Adbc.Connection.query!(state.disk_conn, "DELETE FROM observations WHERE ts < #{disk_cutoff}")
     Adbc.Connection.query!(state.disk_conn, "DELETE FROM events WHERE ts < #{disk_cutoff}")
   rescue
-    e -> Logger.warning("Duxedo: retention failed: #{Exception.message(e)}")
+    e in Adbc.Error ->
+      Logger.warning("Duxedo: retention failed: #{Exception.message(e)}")
   end
 
   defp retention_seconds({n, :second}), do: n
