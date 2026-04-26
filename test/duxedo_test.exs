@@ -405,6 +405,43 @@ defmodule DuxedoTest do
 
       assert hd(dur_rows)["field"] == "duration"
     end
+
+    test "buffer overflow drops oldest entries past @max_buffer_size", context do
+      %{instance: inst} = start_duxedo(context)
+      collector = Module.concat(Duxedo.Collector, inst)
+
+      # @max_buffer_size is 10_000; push 10_050 observations to trigger overflow.
+      for i <- 1..10_050 do
+        obs = %{
+          ts: System.system_time(:second),
+          event: "overflow.metric",
+          field: "v",
+          value: i / 1,
+          tags: "{}",
+          session: "t"
+        }
+
+        GenServer.cast(collector, {:observation, obs})
+      end
+
+      Duxedo.Collector.flush(inst)
+
+      assert Duxedo.Query.count("overflow.metric", instance: inst) == 10_000
+    end
+
+    test "handlers are detached when the collector terminates", context do
+      %{instance: inst} = start_duxedo(context)
+
+      assert Enum.any?(:telemetry.list_handlers([:vm, :memory]), fn h ->
+               match?({Duxedo.Collector, :metric, _, ^inst}, h.id)
+             end)
+
+      stop_supervised!(Duxedo)
+
+      refute Enum.any?(:telemetry.list_handlers([:vm, :memory]), fn h ->
+               match?({Duxedo.Collector, :metric, _, ^inst}, h.id)
+             end)
+    end
   end
 
   # ── Query: time ranges ────────────��────────────────────────────────

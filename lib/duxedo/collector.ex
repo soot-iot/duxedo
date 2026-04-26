@@ -20,6 +20,11 @@ defmodule Duxedo.Collector do
 
   @impl GenServer
   def init(args) do
+    # Trap exits so terminate/2 runs on supervisor shutdown — otherwise
+    # detach_handlers/1 never fires and :telemetry handlers leak between
+    # instance restarts.
+    Process.flag(:trap_exit, true)
+
     instance = args[:instance]
     collect_interval = (args[:collect_interval] || 5) * 1_000
     session = args[:session] || (16 |> :crypto.strong_rand_bytes() |> Base.encode16(case: :lower))
