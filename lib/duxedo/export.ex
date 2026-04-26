@@ -5,10 +5,10 @@ defmodule Duxedo.Export do
 
   def to_arrow_ipc(%Dux{} = dux) do
     computed = Dux.compute(dux)
-    {:table, table_ref} = computed.source
+    {:table, %Dux.TableRef{name: table_name}} = computed.source
     conn = computed.conn || Dux.Connection.get_conn()
 
-    Adbc.Connection.query_pointer(conn, "SELECT * FROM #{table_ref}", fn stream_result ->
+    Adbc.Connection.query_pointer(conn, "SELECT * FROM #{table_name}", fn stream_result ->
       Adbc.StreamResult.to_ipc_stream(stream_result)
     end)
   end

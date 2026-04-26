@@ -916,6 +916,59 @@ defmodule DuxedoTest do
       result = Duxedo.Export.plot("nonexistent", instance: inst)
       assert {:error, "No data"} = result
     end
+
+    test "CSV writes to a provided iodevice and returns :ok", context do
+      %{instance: inst} = start_duxedo(context)
+      now = System.system_time(:second)
+
+      insert_observations(inst, [
+        %{ts: now, event: "m", field: "v", value: 1.0},
+        %{ts: now, event: "m", field: "v", value: 2.0}
+      ])
+
+      {:ok, device} = StringIO.open("")
+
+      :ok =
+        Duxedo.Query.observations("m", instance: inst)
+        |> Duxedo.Export.to_csv(iodevice: device)
+
+      {:ok, {_, written}} = StringIO.close(device)
+      assert written =~ "value"
+      assert String.split(written, "\n") |> length() == 3
+    end
+
+    test "Arrow IPC round-trips through from_arrow_ipc", context do
+      %{instance: inst} = start_duxedo(context)
+      now = System.system_time(:second)
+
+      insert_observations(inst, [
+        %{ts: now, event: "m", field: "v", value: 1.5},
+        %{ts: now, event: "m", field: "v", value: 2.5}
+      ])
+
+      {:ok, ipc} =
+        Duxedo.Query.observations("m", instance: inst)
+        |> Duxedo.Export.to_arrow_ipc()
+
+      assert is_binary(ipc)
+      assert byte_size(ipc) > 0
+
+      {:ok, stream_result} = Duxedo.Export.from_arrow_ipc(ipc)
+      assert %Adbc.StreamResult{} = stream_result
+    end
+
+    test "Arrow IPC from metric-name variant produces the same payload shape", context do
+      %{instance: inst} = start_duxedo(context)
+      now = System.system_time(:second)
+
+      insert_observations(inst, [
+        %{ts: now, event: "m", field: "v", value: 7.0}
+      ])
+
+      {:ok, ipc} = Duxedo.Export.to_arrow_ipc("m", instance: inst)
+      assert is_binary(ipc)
+      assert {:ok, %Adbc.StreamResult{}} = Duxedo.Export.from_arrow_ipc(ipc)
+    end
   end
 
   # ── TimeServer ────────────��─────────────────────���──────────────────
