@@ -200,7 +200,7 @@ defmodule Duxedo.Collector do
 
         if measurement != nil and keep?(metric, metadata) do
           tags = extract_tags(metric, metadata)
-          value = if is_struct(metric, Counter), do: 1.0, else: measurement / 1
+          value = measurement / 1
 
           obs = %{
             ts: System.system_time(:second),

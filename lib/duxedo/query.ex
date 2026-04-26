@@ -78,10 +78,7 @@ defmodule Duxedo.Query do
       ORDER BY ts DESC LIMIT 1
       """)
 
-    case result_to_single_value(result, "value") do
-      nil -> nil
-      val -> val
-    end
+    result_to_single_value(result, "value")
   end
 
   def summary(metric_name, opts \\ []) do
@@ -146,7 +143,7 @@ defmodule Duxedo.Query do
     {from_ts, to_ts} = resolve_time_range(opts)
     tags_filter = build_tags_filter(opts[:tags])
 
-    quantile_list = pcts |> Enum.map(&(&1 / 100)) |> inspect()
+    quantile_list = "[" <> Enum.map_join(pcts, ", ", &(&1 / 100)) <> "]"
 
     result =
       Adbc.Connection.query!(conn, """

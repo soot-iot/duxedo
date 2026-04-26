@@ -55,6 +55,7 @@ defmodule Duxedo.Store do
     persistence_dir = args[:persistence_dir] || "/data/duxedo"
     memory_limit = args[:memory_limit] || "64MB"
     flush_interval = (args[:flush_interval] || 300) * 1_000
+    retention_interval = (args[:retention_interval] || 600) * 1_000
     retention = args[:retention] || [memory: {1, :hour}, disk: {30, :day}]
 
     persistence_path = Path.join(persistence_dir, to_string(instance))
@@ -91,11 +92,12 @@ defmodule Duxedo.Store do
       disk_conn: disk_conn,
       persistence_path: persistence_path,
       flush_interval: flush_interval,
+      retention_interval: retention_interval,
       retention: retention
     }
 
     schedule_flush(flush_interval)
-    schedule_retention()
+    schedule_retention(retention_interval)
 
     {:ok, state}
   end
@@ -120,10 +122,13 @@ defmodule Duxedo.Store do
 
   def handle_info(:run_retention, state) do
     do_retention(state)
-    schedule_retention()
+    schedule_retention(state.retention_interval)
     {:noreply, state}
   end
 
+  # Only the in-memory DB is adjusted: disk rows were written in a
+  # previous run when the clock was assumed correct, so their ts
+  # values are real and must not move.
   def handle_info({Duxedo.TimeServer, adjustment}, state) do
     if adjustment != 0 do
       Logger.info("Duxedo: adjusting timestamps by #{adjustment}s after clock sync")
@@ -198,5 +203,5 @@ defmodule Duxedo.Store do
   defp retention_seconds(nil), do: 3600
 
   defp schedule_flush(interval), do: Process.send_after(self(), :flush_to_disk, interval)
-  defp schedule_retention, do: Process.send_after(self(), :run_retention, 600_000)
+  defp schedule_retention(interval), do: Process.send_after(self(), :run_retention, interval)
 end
