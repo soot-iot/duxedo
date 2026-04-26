@@ -72,7 +72,9 @@ defmodule Duxedo.Export do
     csv = Enum.join(lines, "\n")
 
     case opts[:iodevice] do
-      nil -> {:ok, csv}
+      nil ->
+        {:ok, csv}
+
       device ->
         IO.write(device, csv)
         :ok
@@ -84,6 +86,7 @@ defmodule Duxedo.Export do
   end
 
   defp csv_escape(nil), do: ""
+
   defp csv_escape(val) when is_binary(val) do
     if String.contains?(val, [",", "\"", "\n"]) do
       "\"" <> String.replace(val, "\"", "\"\"") <> "\""
@@ -91,5 +94,6 @@ defmodule Duxedo.Export do
       val
     end
   end
+
   defp csv_escape(val), do: to_string(val)
 end

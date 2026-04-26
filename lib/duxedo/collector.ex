@@ -26,7 +26,8 @@ defmodule Duxedo.Collector do
     metrics = args[:metrics] || []
     events = args[:events] || []
 
-    handler_ids = register_metrics(instance, metrics, session) ++ register_events(instance, events, session)
+    handler_ids =
+      register_metrics(instance, metrics, session) ++ register_events(instance, events, session)
 
     state = %{
       instance: instance,
@@ -243,6 +244,7 @@ defmodule Duxedo.Collector do
   end
 
   defp extract_measurement(%Counter{}, _measurements, _metadata), do: 1
+
   defp extract_measurement(metric, measurements, metadata) do
     case metric.measurement do
       fun when is_function(fun, 1) -> fun.(measurements)
