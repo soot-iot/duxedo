@@ -51,3 +51,4 @@ jobs:
       - run: mix credo --strict
       - run: mix sobelow
       - run: mix test
+      - run: mix dialyzer --format github

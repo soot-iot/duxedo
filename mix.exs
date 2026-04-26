@@ -16,7 +16,14 @@ defmodule Duxedo.MixProject do
       package: package(),
       source_url: @source_url,
       docs: docs(),
-      aliases: aliases()
+      aliases: aliases(),
+      dialyzer: [
+        plt_add_apps: [:mix, :ex_unit, :crypto],
+        plt_core_path: "priv/plts",
+        plt_local_path: "priv/plts",
+        ignore_warnings: ".dialyzer_ignore.exs",
+        list_unused_filters?: true
+      ]
     ]
   end
 
@@ -65,6 +72,7 @@ defmodule Duxedo.MixProject do
 
       # Dev / test
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.34", only: [:dev], runtime: false},
       {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false}
