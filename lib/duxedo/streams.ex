@@ -146,11 +146,9 @@ defmodule Duxedo.Streams do
 
   defp build_create_sql(%{name: name, columns: columns}) do
     cols_sql =
-      columns
-      |> Enum.map(fn {col_name, type, _opts} ->
+      Enum.map_join(columns, ", ", fn {col_name, type, _opts} ->
         "#{quote_ident(col_name)} #{Map.fetch!(@duckdb_types, type)}"
       end)
-      |> Enum.join(", ")
 
     "CREATE TABLE IF NOT EXISTS #{quote_ident(name)} (#{cols_sql})"
   end
@@ -160,7 +158,7 @@ defmodule Duxedo.Streams do
 
   defp normalize_column({name, type, opts})
        when is_atom(name) and is_atom(type) and is_list(opts) do
-    unless Map.has_key?(@duckdb_types, type) do
+    if !Map.has_key?(@duckdb_types, type) do
       raise ArgumentError, "unsupported Duxedo.Streams type #{inspect(type)}"
     end
 
@@ -185,7 +183,7 @@ defmodule Duxedo.Streams do
   def append(name, row, opts \\ []), do: bulk_append(name, [row], opts)
 
   @doc "Append multiple rows in one DuckDB bulk insert."
-  @spec bulk_append(atom(), [map()], keyword()) :: :ok | {:error, term()}
+  @spec bulk_append(atom(), [map()], keyword()) :: :ok | :error | {:error, term()}
   def bulk_append(_name, [], _opts), do: :ok
 
   def bulk_append(name, rows, opts) when is_atom(name) and is_list(rows) do
@@ -233,7 +231,7 @@ defmodule Duxedo.Streams do
   Used by callers that want to inspect rows before uploading.
   """
   @spec take_oldest(atom(), pos_integer(), keyword()) ::
-          {:ok, [map()]} | {:error, term()}
+          {:ok, [map()]} | :error | {:error, term()}
   def take_oldest(name, max_rows, opts \\ []) do
     instance = Keyword.get(opts, :instance, :duxedo)
 
@@ -254,7 +252,7 @@ defmodule Duxedo.Streams do
   rows: integer}}` or `{:error, :empty}` if the stream has nothing
   buffered.
   """
-  @spec to_arrow_ipc(atom(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec to_arrow_ipc(atom(), keyword()) :: {:ok, map()} | :error | {:error, term()}
   def to_arrow_ipc(name, opts \\ []) do
     instance = Keyword.get(opts, :instance, :duxedo)
     max_rows = Keyword.get(opts, :max_rows, 1_000)
@@ -319,7 +317,7 @@ defmodule Duxedo.Streams do
   # ─── deletes ────────────────────────────────────────────────────────
 
   @doc "Drop every row whose sequence is `<= up_to_seq`."
-  @spec drop_through(atom(), integer(), keyword()) :: :ok | {:error, term()}
+  @spec drop_through(atom(), integer(), keyword()) :: :ok | :error | {:error, term()}
   def drop_through(name, up_to_seq, opts \\ []) when is_integer(up_to_seq) do
     instance = Keyword.get(opts, :instance, :duxedo)
 
@@ -333,7 +331,7 @@ defmodule Duxedo.Streams do
   end
 
   @doc "Drop every row in the stream."
-  @spec truncate(atom(), keyword()) :: :ok | {:error, term()}
+  @spec truncate(atom(), keyword()) :: :ok | :error | {:error, term()}
   def truncate(name, opts \\ []) do
     instance = Keyword.get(opts, :instance, :duxedo)
 
@@ -352,7 +350,7 @@ defmodule Duxedo.Streams do
   rough estimates intended for retention triggers, not accurate
   on-disk sizes.
   """
-  @spec stats(atom(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec stats(atom(), keyword()) :: {:ok, map()} | :error | {:error, term()}
   def stats(name, opts \\ []) do
     instance = Keyword.get(opts, :instance, :duxedo)
 
@@ -437,7 +435,7 @@ defmodule Duxedo.Streams do
   defp quote_ident(name) when is_atom(name), do: quote_ident(Atom.to_string(name))
 
   defp quote_ident(name) when is_binary(name) do
-    unless Regex.match?(~r/\A[A-Za-z_][A-Za-z0-9_]*\z/, name) do
+    if !Regex.match?(~r/\A[A-Za-z_][A-Za-z0-9_]*\z/, name) do
       raise ArgumentError, "invalid Duxedo.Streams identifier #{inspect(name)}"
     end
 
