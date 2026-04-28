@@ -7,7 +7,9 @@ defmodule Duxedo.StreamsTest do
     instance =
       :"streams_t_#{ctx.test |> Atom.to_string() |> String.replace(~r/[^a-zA-Z0-9]/, "_") |> String.slice(0, 50)}"
 
-    tmp_dir = System.tmp_dir!() |> Path.join("duxedo_streams_#{:erlang.unique_integer([:positive])}")
+    tmp_dir =
+      System.tmp_dir!() |> Path.join("duxedo_streams_#{:erlang.unique_integer([:positive])}")
+
     File.mkdir_p!(tmp_dir)
 
     start_supervised!(
@@ -28,7 +30,9 @@ defmodule Duxedo.StreamsTest do
     %{instance: instance}
   end
 
-  test "define/3 creates a typed table; redefining the same schema is a no-op", %{instance: instance} do
+  test "define/3 creates a typed table; redefining the same schema is a no-op", %{
+    instance: instance
+  } do
     cols = [{:seq, :s64}, {:ts, :s64}, {:x, :f64}]
     assert :ok = Streams.define(:vibration, cols, instance: instance)
     assert :ok = Streams.define(:vibration, cols, instance: instance)
