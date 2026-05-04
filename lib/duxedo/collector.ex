@@ -186,8 +186,13 @@ defmodule Duxedo.Collector do
   defp parse_event_def({name, opts}) when is_binary(name), do: {parse_event_name(name), opts}
   defp parse_event_def(name) when is_binary(name), do: {parse_event_name(name), []}
 
+  # Event names are operator-supplied at config time. We resolve to
+  # existing atoms only — the emitter has already used the atom by the
+  # time we attach. A typo or an unused atom raises ArgumentError on
+  # boot, which is louder (and safer for the atom table) than silent
+  # atom growth.
   defp parse_event_name(name) do
-    name |> String.split(".", trim: true) |> Enum.map(&String.to_atom/1)
+    name |> String.split(".", trim: true) |> Enum.map(&String.to_existing_atom/1)
   end
 
   defp detach_handlers(ids) do

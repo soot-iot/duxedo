@@ -53,7 +53,10 @@ defmodule Duxedo do
       {Duxedo.Collector, opts}
     ]
 
-    Supervisor.init(children, strategy: :rest_for_one)
+    # On flash storage DuckDB can stutter under disk pressure. The
+    # default 3-restarts-in-5-seconds is too tight for that; allow
+    # 5-in-60 so transient disk hiccups don't kill the supervisor.
+    Supervisor.init(children, strategy: :rest_for_one, max_restarts: 5, max_seconds: 60)
   end
 
   defdelegate list_metrics(opts \\ []), to: Duxedo.Query
