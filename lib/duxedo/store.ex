@@ -37,16 +37,47 @@ defmodule Duxedo.Store do
     :persistent_term.get({__MODULE__, instance, :disk})
   end
 
+  @doc """
+  Move rows older than the in-memory retention window from the memory
+  DB to the disk DB.
+
+  ## Durability
+
+  Adbc/DuckDB writes are buffered. Rows are durable on disk after the
+  next DuckDB checkpoint or on graceful shutdown via `terminate/2`,
+  not the moment this call returns. If you need write-then-crash
+  durability, call this and then `Adbc.Connection.query!(disk_conn,
+  "CHECKPOINT")` explicitly.
+
+  ## Failure mode
+
+  If `transfer_table/4` raises after inserting some rows on disk but
+  before the matching memory `DELETE` runs, the next flush will move
+  the same rows again. `observations` has no unique key, so duplicates
+  accumulate. We accept this rather than wrapping the cross-DB move in
+  a transaction — operators get at-least-once flush semantics.
+  """
   def flush_to_disk(instance \\ :duxedo) do
     GenServer.call(name(instance), :flush_to_disk)
   end
 
+  @doc """
+  Apply retention by deleting rows older than the configured windows
+  on both the memory and disk DBs.
+  """
   def run_retention(instance \\ :duxedo) do
     GenServer.call(name(instance), :run_retention)
   end
 
   defp name(instance), do: Module.concat(__MODULE__, instance)
 
+  # init/1 opens the DuckDB connections synchronously rather than
+  # offloading to handle_continue/2. The :rest_for_one supervisor
+  # starts Collector after Store, and Collector reads the conns from
+  # :persistent_term, so Store's init must complete before the next
+  # child starts. Moving the work to handle_continue would introduce
+  # a race; the work is bounded (DuckDB open + 4 CREATE TABLE IF NOT
+  # EXISTS) and fast enough in practice not to need deferral.
   @impl GenServer
   def init(args) do
     Process.flag(:trap_exit, true)
